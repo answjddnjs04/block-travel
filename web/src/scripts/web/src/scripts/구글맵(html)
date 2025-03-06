@@ -1,0 +1,363 @@
+// 블록 렌더링 함수 완성
+function renderBlocks() {
+  const blocksContainer = document.getElementById('blocks-list');
+  blocksContainer.innerHTML = '';
+  
+  // 필터링된 블록만 표시
+  const filteredBlocks = currentFilter === 'all' 
+    ? myBlocks 
+    : myBlocks.filter(block => block.type === currentFilter);
+  
+  filteredBlocks.forEach(block => {
+    const blockElement = document.createElement('div');
+    blockElement.className = 'block-card';
+    blockElement.setAttribute('draggable', 'true');
+    blockElement.setAttribute('data-block-id', block.id);
+    
+    // 태그 HTML 생성
+    const tagsHtml = block.tags.map(tag => 
+      `<span class="block-tag">${tag}</span>`
+    ).join('');
+    
+    blockElement.innerHTML = `
+      <div class="block-image" style="background-image: url('${block.image}'); background-size: cover; background-position: center;">
+        <div class="block-popularity">${block.popularity}명</div>
+      </div>
+      <div class="block-info">
+        <div class="block-title">${block.name}</div>
+        <div class="block-tags">
+          ${tagsHtml}
+        </div>
+      </div>
+    `;
+    
+    // 드래그 시작 이벤트
+    blockElement.addEventListener('dragstart', function(e) {
+      handleDragStart(e, block);
+    });
+    
+    blocksContainer.appendChild(blockElement);
+  });
+}
+
+// 계획 슬롯 렌더링 함수
+function renderPlanSlots() {
+  const slotsContainer = document.getElementById('plan-slots');
+  slotsContainer.innerHTML = '';
+  
+  planSlots.forEach((slot, index) => {
+    const slotElement = document.createElement('div');
+    slotElement.className = `plan-slot ${slot.block ? 'plan-slot-filled' : 'plan-slot-empty'}`;
+    slotElement.setAttribute('data-slot-id', slot.id);
+    
+    // 슬롯 헤더
+    let slotHeaderHtml = `
+      <div class="slot-header">
+        <div class="slot-icon ${slot.block ? 'slot-icon-filled' : 'slot-icon-empty'}">
+          ${slot.icon}
+        </div>
+        <div class="slot-title">${slot.title}</div>
+      </div>
+    `;
+    
+    // 슬롯 내용
+    let slotContentHtml = '';
+    if (slot.block) {
+      // 블록이 배치된 경우
+      const tagsHtml = slot.block.tags.map(tag => 
+        `<span class="block-tag">${tag}</span>`
+      ).join('');
+      
+      slotContentHtml = `
+        <div class="placed-block">
+          <div class="placed-image" style="background-image: url('${slot.block.image}'); background-size: cover; background-position: center;"></div>
+          <div>
+            <div class="block-title">${slot.block.name}</div>
+            <div class="block-tags">
+              ${tagsHtml}
+            </div>
+          </div>
+          <button class="remove-block" data-slot-index="${index}">×</button>
+        </div>
+      `;
+    } else {
+      // 빈 슬롯
+      slotContentHtml = `
+        <div class="slot-placeholder">
+          블록을 여기로 드래그하세요
+        </div>
+      `;
+    }
+    
+    slotElement.innerHTML = slotHeaderHtml + slotContentHtml;
+    
+    // 드래그 앤 드롭 이벤트
+    slotElement.addEventListener('dragover', handleDragOver);
+    slotElement.addEventListener('dragleave', handleDragLeave);
+    slotElement.addEventListener('drop', function(e) {
+      handleDrop(e, index);
+    });
+    
+    slotsContainer.appendChild(slotElement);
+  });
+  
+  // 삭제 버튼 이벤트 추가
+  const removeButtons = document.querySelectorAll('.remove-block');
+  removeButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      const slotIndex = parseInt(this.getAttribute('data-slot-index'));
+      removeBlockFromSlot(slotIndex);
+    });
+  });
+}
+
+// 블록 드래그 시작
+function handleDragStart(e, block) {
+  draggedBlock = block;
+  e.dataTransfer.setData('text/plain', block.id);
+  e.dataTransfer.effectAllowed = 'copy';
+}
+
+// 드래그 오버 처리
+function handleDragOver(e) {
+  e.preventDefault();
+  e.currentTarget.classList.add('drag-over');
+  e.dataTransfer.dropEffect = 'copy';
+}
+
+// 드래그 떠남 처리
+function handleDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+
+// 드롭 처리
+function handleDrop(e, slotIndex) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  
+  if (!draggedBlock) return;
+  
+  // 슬롯에 블록 할당
+  planSlots[slotIndex].block = draggedBlock;
+  
+  // 경로 계산 (실제 앱에서는 여기서 Google Maps Directions API 사용)
+  calculateRoutes();
+  
+  // 슬롯 다시 렌더링
+  renderPlanSlots();
+  
+  // 드래그된 블록 초기화
+  draggedBlock = null;
+}
+
+// 슬롯에서 블록 제거
+function removeBlockFromSlot(slotIndex) {
+  if (slotIndex >= 0 && slotIndex < planSlots.length) {
+    planSlots[slotIndex].block = null;
+    renderPlanSlots();
+    
+    // 경로 다시 계산
+    calculateRoutes();
+  }
+}
+
+// 경로 계산 함수
+function calculateRoutes() {
+  // 블록이 배치된 슬롯만 필터링
+  const filledSlots = planSlots.filter(slot => slot.block !== null);
+  
+  // 경로 표시를 위한 마커와 선 초기화
+  clearRouteDisplay();
+  
+  // 배치된 블록이 2개 미만이면 경로 계산 불필요
+  if (filledSlots.length < 2) return;
+  
+  // 각 장소별 마커 생성
+  filledSlots.forEach(slot => {
+    if (slot.block && slot.block.location) {
+      const position = slot.block.location;
+      
+      // 마커 생성
+      const marker = new google.maps.Marker({
+        position: position,
+        map: map,
+        title: slot.block.name
+      });
+      
+      routeMarkers.push(marker);
+    }
+  });
+  
+  // 여기서 실제로는 Google Maps Directions API를 사용하여 경로를 계산하고 표시
+  // 이 데모에서는 단순히 직선으로 연결
+  for (let i = 0; i < filledSlots.length - 1; i++) {
+    if (filledSlots[i].block && filledSlots[i+1].block &&
+        filledSlots[i].block.location && filledSlots[i+1].block.location) {
+      
+      const path = [
+        filledSlots[i].block.location,
+        filledSlots[i+1].block.location
+      ];
+      
+      const routeLine = new google.maps.Polyline({
+        path: path,
+        geodesic: true,
+        strokeColor: '#3b82f6',
+        strokeOpacity: 0.8,
+        strokeWeight: 3,
+        map: map
+      });
+      
+      routeLines.push(routeLine);
+    }
+  }
+  
+  // 지도 범위를 모든 장소가 보이도록 조정
+  if (routeMarkers.length > 0) {
+    const bounds = new google.maps.LatLngBounds();
+    routeMarkers.forEach(marker => bounds.extend(marker.getPosition()));
+    map.fitBounds(bounds);
+  }
+}
+
+// 경로 표시 초기화
+let routeMarkers = [];
+let routeLines = [];
+
+function clearRouteDisplay() {
+  // 마커 제거
+  routeMarkers.forEach(marker => marker.setMap(null));
+  routeMarkers = [];
+  
+  // 선 제거
+  routeLines.forEach(line => line.setMap(null));
+  routeLines = [];
+}
+
+// 이벤트 리스너 설정
+function setupEventListeners() {
+  // 필터 버튼 이벤트
+  const filterButtons = document.querySelectorAll('.filter-button');
+  filterButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      // 이전 active 버튼 비활성화
+      document.querySelector('.filter-active').classList.remove('filter-active');
+      document.querySelector('.filter-active').classList.add('filter-inactive');
+      
+      // 현재 버튼 활성화
+      this.classList.remove('filter-inactive');
+      this.classList.add('filter-active');
+      
+      // 필터 적용
+      currentFilter = this.getAttribute('data-filter');
+      renderBlocks();
+    });
+  });
+  
+  // 교통 모드 선택 이벤트
+  const transportButtons = document.querySelectorAll('.transport-button');
+  transportButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      // 이전 active 버튼 비활성화
+      document.querySelector('.transport-active').classList.remove('transport-active');
+      document.querySelector('.transport-active').classList.add('transport-inactive');
+      
+      // 현재 버튼 활성화
+      this.classList.remove('transport-inactive');
+      this.classList.add('transport-active');
+      
+      // 교통 모드 적용
+      transportMode = this.getAttribute('data-transport');
+      
+      // 경로 다시 계산
+      calculateRoutes();
+    });
+  });
+  
+  // 탭 전환 이벤트
+  const tabs = document.querySelectorAll('.tab');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', function() {
+      // 이전 active 탭 비활성화
+      document.querySelector('.tab.active').classList.remove('active');
+      
+      // 현재 탭 활성화
+      this.classList.add('active');
+      
+      // 탭 컨텐츠 전환 로직 추가 (향후 구현)
+    });
+  });
+  
+  // 태그 추가 버튼 이벤트
+  document.getElementById('add-tag').addEventListener('click', function() {
+    const tagInput = document.getElementById('tag-input');
+    addTag(tagInput.value);
+    tagInput.value = '';
+  });
+  
+  // 태그 입력 필드 엔터 키 이벤트
+  document.getElementById('tag-input').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      addTag(this.value);
+      this.value = '';
+      e.preventDefault();
+    }
+  });
+  
+  // 블록 생성 버튼 이벤트
+  document.getElementById('create-block-btn').addEventListener('click', createBlock);
+  
+  // 모달 닫기 버튼 이벤트
+  document.getElementById('close-create-block').addEventListener('click', function() {
+    document.getElementById('create-block-panel').style.display = 'none';
+    document.getElementById('modal-backdrop').style.display = 'none';
+  });
+  
+  // 여행 계획 저장 버튼 이벤트
+  document.getElementById('save-plan').addEventListener('click', function() {
+    savePlan();
+  });
+}
+
+// 여행 계획 저장 함수
+function savePlan() {
+  // 필수 항목 체크
+  const filledSlots = planSlots.filter(slot => slot.block !== null);
+  if (filledSlots.length < 2) {
+    alert('최소 2개 이상의 블록을 배치해주세요.');
+    return;
+  }
+  
+  // 여행 계획 정보 수집
+  const plan = {
+    id: 'plan-' + Date.now(),
+    name: '새 여행 계획',
+    transportMode: transportMode,
+    slots: JSON.parse(JSON.stringify(planSlots)),
+    createdAt: new Date().toISOString()
+  };
+  
+  // 저장 로직 (실제 앱에서는 서버에 저장)
+  console.log('여행 계획 저장:', plan);
+  alert('여행 계획이 저장되었습니다!');
+  
+  // 데모: 저장 후 계획 초기화
+  resetPlan();
+}
+
+// 여행 계획 초기화
+function resetPlan() {
+  // 모든 슬롯 초기화
+  planSlots.forEach(slot => {
+    slot.block = null;
+  });
+  
+  // 경로 표시 제거
+  clearRouteDisplay();
+  
+  // 슬롯 다시 렌더링
+  renderPlanSlots();
+}
+
+// 구글 맵스 API 로드 완료 후 실행
+window.initMap = initMap;
