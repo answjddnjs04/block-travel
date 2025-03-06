@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>블록 여행</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+    .block-card { display: flex; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; overflow: hidden; }
+    .block-image { width: 120px; height: 120px; background-color: #ddd; position: relative; }
+    .popularity { position: absolute; bottom: 5px; right: 5px; background: rgba(0,0,0,0.7); color: white; padding: 3px 6px; font-size: 12px; border-radius: 4px; }
+    .block-info { padding: 15px; flex: 1; }
+    .tag { display: inline-block; background: #dbeafe; color: #2563eb; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-right: 6px; }
+  </style>
+</head>
+<body>
+  <h1>블록 여행</h1>
+  <p>SNS 콘텐츠 기반 블록형 여행 계획 앱</p>
+  
+  <h2>블록 예시</h2>
+  <div class="block-card">
+    <div class="block-image">
+      <div class="popularity">234명</div>
+    </div>
+    <div class="block-info">
+      <h3>성산일출봉</h3>
+      <div>
+        <span class="tag">관광</span>
+        <span class="tag">제주</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
