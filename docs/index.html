@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>블록 여행</title>
+  <style>
+    /* 기본 스타일 */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; color: #333; background-color: #f5f7fa; }
+    header { background-color: #3b82f6; color: white; padding: 1rem; text-align: center; }
+    
+    /* 메인 레이아웃 */
+    .container { max-width: 1200px; margin: 0 auto; padding: 1rem; }
+    .app-layout { display: flex; height: calc(100vh - 120px); }
+    .block-panel { width: 40%; padding: 1rem; border-right: 1px solid #e5e7eb; overflow-y: auto; }
+    .plan-panel { width: 60%; padding: 1rem; background-color: #f9fafb; overflow-y: auto; }
+    h2 { margin-bottom: 1rem; font-size: 1.2rem; }
+    
+    /* 필터 버튼 */
+    .filter-buttons { display: flex; gap: 0.5rem; margin-bottom: 1rem; overflow-x: auto; padding-bottom: 0.5rem; }
+    .filter-button { padding: 0.5rem 1rem; border-radius: 9999px; font-size: 0.8rem; border: none; cursor: pointer; }
+    .filter-active { background-color: #3b82f6; color: white; }
+    .filter-inactive { background-color: white; color: #4b5563; border: 1px solid #d1d5db; }
+    
+    /* 블록 카드 */
+    .block-card { display: flex; background: white; border-radius: 0.5rem; margin-bottom: 0.8rem; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .block-image { width: 80px; height: 80px; background-color: #d1d5db; position: relative; }
+    .block-popularity { position: absolute; bottom: 4px; right: 4px; background: rgba(0,0,0,0.6); color: white; font-size: 0.6rem; padding: 2px 4px; border-radius: 4px; }
+    .block-info { padding: 0.7rem; flex: 1; }
+    .block-title { font-size: 0.9rem; font-weight: 500; margin-bottom: 0.5rem; }
+    .block-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+    .block-tag { background-color: #dbeafe; color: #2563eb; font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; }
+    
+    /* 계획 템플릿 */
+    .plan-header { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+    .transport-button { padding: 0.4rem 0.8rem; border-radius: 9999px; font-size: 0.8rem; display: flex; align-items: center; gap: 0.3rem; border: none; cursor: pointer; }
+    .transport-active { background-color: #dbeafe; color: #2563eb; }
+    .transport-inactive { background-color: #f3f4f6; color: #6b7280; }
+    
+    .plan-slot { background-color: white; border-radius: 0.5rem; margin-bottom: 0.8rem; padding: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .plan-slot-empty { border: 2px dashed #d1d5db; }
+    .plan-slot-filled { border: 2px solid #3b82f6; }
+    .slot-header { display: flex; align-items: center; margin-bottom: 0.5rem; }
+    .slot-icon { width: 2rem; height: 2rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 0.5rem; }
+    .slot-icon-empty { background-color: #e5e7eb; color: #6b7280; }
+    .slot-icon-filled { background-color: #3b82f6; color: white; }
+    .slot-title { font-weight: 500; }
+    .slot-placeholder { text-align: center; color: #6b7280; font-style: italic; padding: 1rem 0; font-size: 0.9rem; }
+    
+    /* 블록 배치 */
+    .placed-block { display: flex; background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 0.3rem; padding: 0.5rem; margin-top: 0.5rem; }
+    .placed-image { width: 3rem; height: 3rem; background-color: #d1d5db; border-radius: 0.3rem; margin-right: 0.5rem; }
+    
+    /* 하단 저장 버튼 */
+    .save-button { background-color: #3b82f6; color: white; border: none; padding: 0.8rem; border-radius: 0.5rem; width: 100%; font-weight: 600; cursor: pointer; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>블록 여행</h1>
+  </header>
+  
+  <div class="container">
+    <div class="app-layout">
+      <!-- 왼쪽 패널: 블록 저장소 -->
+      <div class="block-panel">
+        <h2>내 블록</h2>
+        
+        <!-- 필터 버튼 -->
+        <div class="filter-buttons">
+          <button class="filter-button filter-active">전체</button>
+          <button class="filter-button filter-inactive">맛집</button>
+          <button class="filter-button filter-inactive">관광지</button>
+          <button class="filter-button filter-inactive">카페</button>
+          <button class="filter-button filter-inactive">숙소</button>
+        </div>
+        
+        <!-- 블록 목록 -->
+        <div class="blocks-list">
+          <!-- 블록 1 -->
+          <div class="block-card">
+            <div class="block-image">
+              <div class="block-popularity">234명</div>
+            </div>
+            <div class="block-info">
+              <div class="block-title">성산일출봉</div>
+              <div class="block-tags">
+                <span class="block-tag">관광</span>
+                <span class="block-tag">제주</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 블록 2 -->
+          <div class="block-card">
+            <div class="block-image">
+              <div class="block-popularity">187명</div>
+            </div>
+            <div class="block-info">
+              <div class="block-title">제주 흑돼지 맛집</div>
+              <div class="block-tags">
+                <span class="block-tag">맛집</span>
+                <span class="block-tag">제주</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 블록 3 -->
+          <div class="block-card">
+            <div class="block-image">
+              <div class="block-popularity">156명</div>
+            </div>
+            <div class="block-info">
+              <div class="block-title">바다뷰 카페</div>
+              <div class="block-tags">
+                <span class="block-tag">카페</span>
+                <span class="block-tag">제주</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 블록 4 -->
+          <div class="block-card">
+            <div class="block-image">
+              <div class="block-popularity">123명</div>
+            </div>
+            <div class="block-info">
+              <div class="block-title">바다 펜션</div>
+              <div class="block-tags">
+                <span class="block-tag">숙소</span>
+                <span class="block-tag">제주</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 오른쪽 패널: 계획 템플릿 -->
+      <div class="plan-panel">
+        <h2>여행 계획 만들기</h2>
+        
+        <!-- 교통 모드 선택 -->
+        <div class="plan-header">
+          <button class="transport-button transport-active">
+            <span>🚗</span> 자차
+          </button>
+          <button class="transport-button transport-inactive">
+            <span>🚌</span> 대중교통
+          </button>
+        </div>
+        
+        <!-- 계획 템플릿 -->
+        <div class="plan-slots">
+          <!-- 출발 슬롯 -->
+          <div class="plan-slot plan-slot-empty">
+            <div class="slot-header">
+              <div class="slot-icon slot-icon-empty">1</div>
+              <div class="slot-title">출발 교통편</div>
+            </div>
+            <div class="slot-placeholder">
+              블록을 여기로 드래그하세요
+            </div>
+          </div>
+          
+          <!-- 도착 슬롯 -->
+          <div class="plan-slot plan-slot-empty">
+            <div class="slot-header">
+              <div class="slot-icon slot-icon-empty">2</div>
+              <div class="slot-title">도착지</div>
+            </div>
+            <div class="slot-placeholder">
+              블록을 여기로 드래그하세요
+            </div>
+          </div>
+          
+          <!-- 오전 관광 슬롯 (블록 배치됨) -->
+          <div class="plan-slot plan-slot-filled">
+            <div class="slot-header">
+              <div class="slot-icon slot-icon-filled">3</div>
+              <div class="slot-title">오전 관광</div>
+            </div>
+            <div class="placed-block">
+              <div class="placed-image"></div>
+              <div>
+                <div class="block-title">성산일출봉</div>
+                <div class="block-tags">
+                  <span class="block-tag">관광</span>
+                  <span class="block-tag">제주</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 점심 식사 슬롯 -->
+          <div class="plan-slot plan-slot-empty">
+            <div class="slot-header">
+              <div class="slot-icon slot-icon-empty">4</div>
+              <div class="slot-title">점심 식사</div>
+            </div>
+            <div class="slot-placeholder">
+              블록을 여기로 드래그하세요
+            </div>
+          </div>
+          
+          <!-- 오후 관광 슬롯 -->
+          <div class="plan-slot plan-slot-empty">
+            <div class="slot-header">
+              <div class="slot-icon slot-icon-empty">5</div>
+              <div class="slot-title">오후 관광</div>
+            </div>
+            <div class="slot-placeholder">
+              블록을 여기로 드래그하세요
+            </div>
+          </div>
+          
+          <!-- 저녁 식사 슬롯 -->
+          <div class="plan-slot plan-slot-empty">
+            <div class="slot-header">
+              <div class="slot-icon slot-icon-empty">6</div>
+              <div class="slot-title">저녁 식사</div>
+            </div>
+            <div class="slot-placeholder">
+              블록을 여기로 드래그하세요
+            </div>
+          </div>
+        </div>
+        
+        <!-- 저장 버튼 -->
+        <button class="save-button">여행 계획 저장하기</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
