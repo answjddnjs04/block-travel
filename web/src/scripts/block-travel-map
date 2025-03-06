@@ -1,0 +1,326 @@
+import React, { useState, useEffect } from 'react';
+import { MapPin, Coffee, Utensils, Bed, Camera, Car, Bus, X, Plus, Star, Map, List } from 'lucide-react';
+
+const BlockTravelApp = () => {
+  // 앱 상태 관리
+  const [blocks, setBlocks] = useState([]);
+  const [planSlots, setPlanSlots] = useState([
+    { id: 'slot-1', type: 'departure', title: '출발', icon: 'map-pin', block: null },
+    { id: 'slot-2', type: 'accommodation', title: '숙소', icon: 'bed', block: null },
+    { id: 'slot-3', type: 'morning', title: '오전 관광', icon: 'camera', block: null },
+    { id: 'slot-4', type: 'lunch', title: '점심 식사', icon: 'utensils', block: null },
+    { id: 'slot-5', type: 'afternoon', title: '오후 관광', icon: 'camera', block: null },
+    { id: 'slot-6', type: 'cafe', title: '카페', icon: 'coffee', block: null },
+    { id: 'slot-7', type: 'dinner', title: '저녁 식사', icon: 'utensils', block: null }
+  ]);
+  const [selectedFilter, setSelectedFilter] = useState('all');
+  const [transportMode, setTransportMode] = useState('car');
+  const [draggedBlock, setDraggedBlock] = useState(null);
+  const [hoverSlot, setHoverSlot] = useState(null);
+  
+  // 초기 블록 데이터 로드
+  useEffect(() => {
+    // 실제 앱에서는 API에서 데이터를 가져옴
+    const sampleBlocks = [
+      {
+        id: 'block-1',
+        name: '성산일출봉',
+        type: 'tourist_attraction',
+        tags: ['관광', '제주', '자연'],
+        rating: 5,
+        memo: '일출 시간에 방문하기',
+        image: '/api/placeholder/240/240',
+        popularity: 234
+      },
+      {
+        id: 'block-2',
+        name: '제주 흑돼지 맛집',
+        type: 'restaurant',
+        tags: ['맛집', '제주', '흑돼지'],
+        rating: 4,
+        memo: '사전 예약 필수',
+        image: '/api/placeholder/240/240',
+        popularity: 187
+      },
+      {
+        id: 'block-3',
+        name: '바다뷰 카페',
+        type: 'cafe',
+        tags: ['카페', '제주', '오션뷰'],
+        rating: 4,
+        memo: '노을 시간에 방문 추천',
+        image: '/api/placeholder/240/240',
+        popularity: 156
+      },
+      {
+        id: 'block-4',
+        name: '바다 펜션',
+        type: 'lodging',
+        tags: ['숙소', '제주', '바다'],
+        rating: 4,
+        memo: '체크인 15시부터',
+        image: '/api/placeholder/240/240',
+        popularity: 123
+      }
+    ];
+    setBlocks(sampleBlocks);
+  }, []);
+  
+  // 필터링된 블록 목록
+  const filteredBlocks = selectedFilter === 'all' 
+    ? blocks 
+    : blocks.filter(block => {
+        if (selectedFilter === 'restaurant') return block.type === 'restaurant';
+        if (selectedFilter === 'tourist_attraction') return block.type === 'tourist_attraction';
+        if (selectedFilter === 'cafe') return block.type === 'cafe';
+        if (selectedFilter === 'lodging') return block.type === 'lodging';
+        return block.tags.includes(selectedFilter);
+      });
+  
+  // 드래그 시작 핸들러
+  const handleDragStart = (block) => {
+    setDraggedBlock(block);
+  };
+  
+  // 드래그 종료 핸들러
+  const handleDragEnd = () => {
+    setDraggedBlock(null);
+  };
+  
+  // 드롭 핸들러
+  const handleDrop = (slotIndex) => {
+    if (draggedBlock) {
+      const newPlanSlots = [...planSlots];
+      newPlanSlots[slotIndex].block = draggedBlock;
+      setPlanSlots(newPlanSlots);
+      setHoverSlot(null);
+    }
+  };
+  
+  // 슬롯에서 블록 제거
+  const removeBlockFromSlot = (slotIndex) => {
+    const newPlanSlots = [...planSlots];
+    newPlanSlots[slotIndex].block = null;
+    setPlanSlots(newPlanSlots);
+  };
+  
+  // 계획 저장 핸들러
+  const handleSavePlan = () => {
+    const filledSlots = planSlots.filter(slot => slot.block !== null);
+    if (filledSlots.length < 2) {
+      alert('최소 2개 이상의 블록을 배치해주세요.');
+      return;
+    }
+    
+    alert('여행 계획이 저장되었습니다!');
+  };
+  
+  // 아이콘 렌더링 함수
+  const renderIcon = (iconName) => {
+    switch (iconName) {
+      case 'camera':
+        return <Camera className="w-4 h-4" />;
+      case 'utensils':
+        return <Utensils className="w-4 h-4" />;
+      case 'coffee':
+        return <Coffee className="w-4 h-4" />;
+      case 'bed':
+        return <Bed className="w-4 h-4" />;
+      case 'map-pin':
+        return <MapPin className="w-4 h-4" />;
+      default:
+        return <MapPin className="w-4 h-4" />;
+    }
+  };
+  
+  return (
+    <div className="h-screen flex flex-col bg-gray-50">
+      <header className="bg-blue-600 text-white p-4 shadow">
+        <h1 className="text-xl font-bold text-center">블록 여행</h1>
+      </header>
+      
+      {/* 지도 영역 - 실제 앱에서는 Google Maps 연동 */}
+      <div className="flex h-64 mx-4 mt-4 rounded-lg overflow-hidden shadow">
+        <div className="w-full bg-blue-100 flex items-center justify-center">
+          <Map className="w-8 h-8 text-blue-500" />
+          <span className="ml-2 text-blue-700">지도 영역 (Google Maps 연동)</span>
+        </div>
+      </div>
+      
+      {/* 탭 메뉴 */}
+      <div className="flex border-b border-gray-200 mx-4 mt-4">
+        <div className="px-4 py-2 font-medium text-blue-600 border-b-2 border-blue-600">내 블록</div>
+        <div className="px-4 py-2 text-gray-500">여행 계획</div>
+      </div>
+      
+      {/* 메인 콘텐츠 영역 */}
+      <div className="flex flex-1 mx-4 mt-4 mb-4 overflow-hidden">
+        {/* 왼쪽 패널: 블록 목록 */}
+        <div className="w-2/5 bg-white p-4 rounded-lg shadow mr-4 flex flex-col overflow-hidden">
+          <h2 className="text-lg font-semibold mb-3">내 블록</h2>
+          
+          {/* 필터 버튼 */}
+          <div className="flex flex-wrap gap-2 mb-3">
+            <button 
+              className={`px-3 py-1 rounded-full text-sm ${selectedFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+              onClick={() => setSelectedFilter('all')}
+            >
+              전체
+            </button>
+            <button 
+              className={`px-3 py-1 rounded-full text-sm ${selectedFilter === 'restaurant' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+              onClick={() => setSelectedFilter('restaurant')}
+            >
+              맛집
+            </button>
+            <button 
+              className={`px-3 py-1 rounded-full text-sm ${selectedFilter === 'tourist_attraction' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+              onClick={() => setSelectedFilter('tourist_attraction')}
+            >
+              관광지
+            </button>
+            <button 
+              className={`px-3 py-1 rounded-full text-sm ${selectedFilter === 'cafe' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+              onClick={() => setSelectedFilter('cafe')}
+            >
+              카페
+            </button>
+            <button 
+              className={`px-3 py-1 rounded-full text-sm ${selectedFilter === 'lodging' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+              onClick={() => setSelectedFilter('lodging')}
+            >
+              숙소
+            </button>
+          </div>
+          
+          {/* 블록 리스트 */}
+          <div className="overflow-y-auto flex-1">
+            {filteredBlocks.map(block => (
+              <div
+                key={block.id}
+                draggable
+                onDragStart={() => handleDragStart(block)}
+                onDragEnd={handleDragEnd}
+                className="bg-white rounded-lg shadow mb-3 overflow-hidden border border-gray-200 cursor-grab"
+              >
+                <div className="flex">
+                  <div className="w-16 h-16 bg-gray-300 relative">
+                    <div
+                      className="w-full h-full bg-cover bg-center"
+                      style={{ backgroundImage: `url(${block.image})` }}
+                    />
+                    <div className="absolute bottom-0 right-0 bg-black bg-opacity-60 text-white text-xs px-1 py-px">
+                      {block.popularity}명
+                    </div>
+                  </div>
+                  <div className="p-2 flex-1">
+                    <h4 className="font-medium text-sm">{block.name}</h4>
+                    <div className="flex flex-wrap mt-1 gap-1">
+                      {block.tags.map((tag, i) => (
+                        <span key={i} className="bg-blue-100 text-blue-600 text-xs px-2 rounded">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* 새 블록 추가 버튼 */}
+          <button className="mt-3 flex items-center justify-center p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200">
+            <Plus className="w-4 h-4 mr-1" />
+            새 블록 추가
+          </button>
+        </div>
+        
+        {/* 오른쪽 패널: 계획 템플릿 */}
+        <div className="w-3/5 bg-white p-4 rounded-lg shadow flex flex-col overflow-hidden">
+          <h2 className="text-lg font-semibold mb-3">여행 계획 만들기</h2>
+          
+          {/* 교통 모드 선택 */}
+          <div className="flex space-x-2 mb-3">
+            <button 
+              className={`px-3 py-1 rounded-full text-sm flex items-center ${transportMode === 'car' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}`}
+              onClick={() => setTransportMode('car')}
+            >
+              <Car className="w-3 h-3 mr-1" /> 자차
+            </button>
+            <button 
+              className={`px-3 py-1 rounded-full text-sm flex items-center ${transportMode === 'transit' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}`}
+              onClick={() => setTransportMode('transit')}
+            >
+              <Bus className="w-3 h-3 mr-1" /> 대중교통
+            </button>
+          </div>
+          
+          {/* 계획 템플릿 */}
+          <div className="overflow-y-auto flex-1">
+            {planSlots.map((slot, index) => (
+              <div
+                key={slot.id}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setHoverSlot(index);
+                }}
+                onDragLeave={() => setHoverSlot(null)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  handleDrop(index);
+                }}
+                className={`bg-white rounded-lg shadow mb-3 p-3 ${
+                  slot.block ? 'border-2 border-blue-500' : 
+                  hoverSlot === index ? 'border-2 border-blue-300' : 'border-2 border-dashed border-gray-300'
+                }`}
+              >
+                <div className="flex items-center mb-2">
+                  <div className={`p-1 rounded-full mr-2 ${slot.block ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-500'}`}>
+                    {renderIcon(slot.icon)}
+                  </div>
+                  <span className="font-medium">{slot.title}</span>
+                </div>
+                
+                {slot.block ? (
+                  <div className="flex mt-2">
+                    <div className="w-12 h-12 bg-cover bg-center rounded" style={{ backgroundImage: `url(${slot.block.image})` }}></div>
+                    <div className="flex-1 ml-2">
+                      <div className="text-sm font-medium">{slot.block.name}</div>
+                      <div className="flex flex-wrap mt-1 gap-1">
+                        {slot.block.tags.map((tag, i) => (
+                          <span key={i} className="bg-blue-100 text-blue-600 text-xs px-2 rounded">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => removeBlockFromSlot(index)}
+                      className="text-gray-400 hover:text-red-500"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500 italic text-center py-2">
+                    블록을 여기로 드래그하세요
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          
+          {/* 저장 버튼 */}
+          <button 
+            onClick={handleSavePlan}
+            className="mt-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            여행 계획 저장하기
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default BlockTravelApp;
